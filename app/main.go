@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"os/exec"
 )
@@ -18,8 +18,11 @@ func main() {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 
+	// exit with the same exit code as the child process
 	if err != nil {
-		fmt.Printf("Err: %v", err)
-		os.Exit(1)
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			os.Exit(exitError.ExitCode())
+		}
 	}
 }
