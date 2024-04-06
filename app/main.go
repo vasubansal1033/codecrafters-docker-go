@@ -20,6 +20,11 @@ func main() {
 
 	cmd := exec.Command(command, args...)
 
+	// Process isolation
+	cmd.SysProcAttr = &syscall.SysProcAttr {
+		Cloneflags: syscall.CLONE_NEWPID,
+	}
+
 	// bind the standard input, output and error to the parent process
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
