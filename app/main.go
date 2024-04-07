@@ -7,22 +7,38 @@ import (
 	"os/exec"
 	"path"
 	"syscall"
+	"fmt"
 )
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
+	image := os.Args[2]
+	imageDir := fmt.Sprintf("./images/%s", image)
+
+	if _, err := os.Stat(imageDir); err != nil {
+		if os.IsNotExist(err) {
+			imageDir, err = PullImage(image, "./images")
+			if err != nil {
+				logAndThrowError(err, "Error while pulling the image")
+				os.Exit(255)
+			}
+		}
+	}
+	
 	command := os.Args[3]
 	args := os.Args[4:len(os.Args)]
 
 	// change root filesystem for the child process using chroot
 	// this is necessary to make the child process believe it is running in a different root filesystem
-	EnterNewJail()
+	// not needed during final task since we are downloading our image
+	// EnterNewJail()
 
 	cmd := exec.Command(command, args...)
 
-	// Process isolation
+	// Process isolation by creating new PID namespace
 	cmd.SysProcAttr = &syscall.SysProcAttr {
 		Cloneflags: syscall.CLONE_NEWPID,
+		Chroot: imageDir,
 	}
 
 	// bind the standard input, output and error to the parent process
