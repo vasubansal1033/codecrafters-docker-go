@@ -236,16 +236,19 @@ func PullImage(image string, dir string) (string, error) {
 	}
 
 	runtimeDigest := ""
-	if manifestResponse.Manifests != nil {
-		runtimeDigest = getRuntimeLayerDigest(manifestResponse)
+	layerResponse := LayerResponse{}
+	if manifestResponse.Manifests == nil {
+		layerResponse = LayerResponse{
+			Layers: manifestResponse.Layers,
+		}
 	} else {
-		runtimeDigest = manifestResponse.Layers[0].Digest
+		runtimeDigest = getRuntimeLayerDigest(manifestResponse)
+		layerResponse, err = getLayers(token, imageName, runtimeDigest)
+		if err != nil {
+			panic(err)
+		}
 	}
-	layerResponse, err := getLayers(token, imageName, runtimeDigest)
-	if err != nil {
-		panic(err)
-	}
-
+	
 	imageDirectory := filepath.Join(dir, image)
 	if err := os.MkdirAll(imageDirectory, 0766); err != nil && !os.IsExist(err) {
 		panic(err)
